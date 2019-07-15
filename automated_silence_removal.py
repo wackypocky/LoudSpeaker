@@ -6,51 +6,62 @@ import os
 import errno
 import shutil
 import sys
+from pydub import AudioSegment
 
-DEFAULT_DURATION = 2
-DEFAULT_THRESHOLD = -30
+DEFAULT_DURATION = 2 #seconds
+DEFAULT_THRESHOLD = -9 #dBFS
 
 # TODO: Check if file is silent
 def is_silent(in_filename):
-  # a) go through file and determine continuity of frequency/volume
-  # b) filter by volume
-  # c) use a denoiser
-  return False
+  sound = AudioSegment.from_file(in_filename)
+  peak_amplitude = sound.max_dBFS
+  #print('file:', in_filename)
+  #print('if', peak_amplitude, '>', DEFAULT_THRESHOLD)
+  if peak_amplitude < DEFAULT_THRESHOLD:
+    return True
+  else:
+    return False
 
 # only files with speech are left in directory 'filtered'
 # First, normalize all the files, they get put into 'normalized'
 # Then, delete the filtered directory
-def normalize():
-  args: str = 'ffmpeg-normalize *.m4a -of ../normalized -ext wav' #TODO: adjust file type as needed
-  p = subprocess.Popen(args, shell=True, cwd='filtered')
+def normalize(dirname):
+  path_to_filtered = os.path.join(dirname, 'filtered')
+  args: str = 'ffmpeg-normalize *.wav -of ../normalized -ext wav' #TODO: adjust file type as needed
+  p = subprocess.Popen(args, shell=True, cwd=path_to_filtered)
   p.wait()
-  p = subprocess.run(['rm', '-r', 'filtered'])
+  p = subprocess.run(['rm', '-r', path_to_filtered])
 
 # Then, cut the sections of audio quieter than -32dB and delete the normalized directory
-def remove_silence():
-  fnames: List[str] = os.listdir('normalized')
-  if not os.path.exists('processed'):
-    os.mkdir('processed')
+def remove_silence(dirname):
+  path_to_normalized = os.path.join(dirname, 'normalized')
+  path_to_processed = os.path.join(dirname, 'processed')
+  fnames: List[str] = os.listdir(path_to_normalized)
+  if not os.path.exists(path_to_processed):
+    os.mkdir(path_to_processed)
   for fname in fnames:
-    args: List[str] = ['ffmpeg', '-i', './normalized/' + fname, '-af',
+    args: List[str] = ['ffmpeg', '-i', path_to_normalized + '/' + fname, '-af',
                        'silenceremove=start_periods=1:start_duration=0:'
                        'start_threshold=-32dB:start_silence=0.5:stop_periods=-1'
-                       ':stop_duration=2:stop_threshold=-32dB', './processed/' + fname]
+                       ':stop_duration=2:stop_threshold=-32dB', path_to_processed + '/' + fname]
     p = subprocess.Popen(args)
     p.wait()
-  p = subprocess.run(['rm', '-r', 'normalized'])
+  p = subprocess.run(['rm', '-r', path_to_normalized])
 
 def filter_empty_audio(dirname):
   fnames: List[str] = os.listdir(dirname)
-  if not os.path.exists('filtered'):
-    os.mkdir('filtered')
+  #abspath_dir = os.path.abspath(dirname)
+  path_to_filtered = os.path.join(dirname, 'filtered')
+  if not os.path.exists(path_to_filtered):
+    os.mkdir(path_to_filtered)
   for fname in fnames:
-    if is_silent(fname):
+    if not fname.lower().endswith(('.wav', '.m4a', '.mp3', 'mp4')):
+      continue
+    path_to_file = os.path.join(dirname, fname)
+    if is_silent(path_to_file):
       continue
     else:
-      path = os.path.join(dirname, fname)
-      abspath = os.path.abspath(path)
-      shutil.copy(abspath, 'filtered')
+      shutil.copy(path_to_file, path_to_filtered)
 
 # First step: filtering out silent/white noise files
 def main():
@@ -61,8 +72,8 @@ def main():
 
   for dirname in args:
     filter_empty_audio(dirname)
-    normalize()
-    remove_silence()
+    normalize(dirname)
+    remove_silence(dirname)
 
   # path_to_dir = os.getcwd()
   # directory = os.listdir(path_to_dir)
