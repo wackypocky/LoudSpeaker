@@ -14,7 +14,7 @@ from pydub import AudioSegment
 DEFAULT_DURATION = 2 #seconds
 DEFAULT_THRESHOLD = -35 #dBFS
 SILENCE_CEILING = -25
-NOISE_CEILING = -10
+NOISE_CEILING = -15
 LOW_THRESHOLD = '-45dB'
 HIGH_THRESHOLD = '-32dB'
 
@@ -33,14 +33,14 @@ def is_silent(in_filename: str, ceiling: int):
   #   duration_of_file: int = len(file) / file.samplerate
   #
 
-# only files with speech are left in directory 'filtered'
-# First, normalize all the files, they get put into 'normalized'
-# Then, delete the filtered directory
-def normalize(source_path:str):
-  args: str = 'ffmpeg-normalize * -of "../normalized" -ext wav' #TODO: adjust file type as needed
-  p = subprocess.Popen(args, shell=True, cwd=source_path)
-  p.wait()
-  p = subprocess.run(['rm', '-r', source_path])
+# # only files with speech are left in directory 'filtered'
+# # First, normalize all the files, they get put into 'normalized'
+# # Then, delete the filtered directory
+# def normalize(source_path:str):
+#   args: str = 'ffmpeg-normalize * -of "../normalized" -ext wav' #TODO: adjust file type as needed
+#   p = subprocess.Popen(args, shell=True, cwd=source_path)
+#   p.wait()
+#   p = subprocess.run(['rm', '-r', source_path])
 
 # Then, cut the sections of audio quieter than -32dB and delete the normalized directory
 def remove_silence(source_path:str, dest_path:str, threshold:int):
@@ -89,21 +89,26 @@ def main():
     dest_path = os.path.join(dirname, 'bp_filtered')
     bpfilter.filter(dirname, dest_path)
 
-    # initial pass through files to eliminate completely silent files (-40dB peak)
-    source_path = dest_path
-    #source_path = dirname
-    dest_path = os.path.join(dirname, 'filtered')
-    filter_empty_audio(source_path, dest_path, SILENCE_CEILING)
+    # # denoise with fft
+    # source_path = dest_path
+    # dest_path = os.path.join(dirname, 'denoised')
+    # denoise(source_path, dest_path)
 
-    # first pass to cut pure silence in audio files
-    source_path = dest_path
-    dest_path = os.path.join(dirname, 'silence_removed')
-    remove_silence(source_path, dest_path, LOW_THRESHOLD)
-
-    # normalize all files in a directory to enable second pass
-    source_path = dest_path
-    dest_path = os.path.join(dirname, 'normalized')
-    normalize(source_path)
+    # # initial pass through files to eliminate completely silent files (-40dB peak)
+    # source_path = dest_path
+    # #source_path = dirname
+    # dest_path = os.path.join(dirname, 'filtered')
+    # filter_empty_audio(source_path, dest_path, SILENCE_CEILING)
+    #
+    # # first pass to cut pure silence in audio files
+    # source_path = dest_path
+    # dest_path = os.path.join(dirname, 'silence_removed')
+    # remove_silence(source_path, dest_path, LOW_THRESHOLD)
+    #
+    # # normalize all files in a directory to enable second pass
+    # source_path = dest_path
+    # dest_path = os.path.join(dirname, 'normalized')
+    # normalize(source_path)
 
     # second pass through files to eliminate noise files
     source_path = dest_path
@@ -113,7 +118,7 @@ def main():
     # second pass to cut pure silence in audio files
     source_path = dest_path
     dest_path = os.path.join(dirname, 'processed')
-    remove_silence(source_path, dest_path, HIGH_THRESHOLD)
+    remove_silence(source_path, dest_path, LOW_THRESHOLD)
 
 if __name__ == '__main__':
   main()
