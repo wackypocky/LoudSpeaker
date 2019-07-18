@@ -98,9 +98,13 @@ def main():
 
     # second pass to cut pure silence in audio files
     source_path = dest_path
-    dest_path = os.path.join(dirname, 'processed')
+    dest_path = os.path.join(dirname, 'silence_removed')
     remove_silence(source_path, dest_path, LOW_THRESHOLD)
 
+    # merge the files to ideally 5min lengths, but up to 10min
+    source_path = dest_path
+    dest_path = os.path.join(dirname, 'processed')
+    merge(source_path, dest_path)
     # output = open("output.txt", 'r')
     # lines: List[str] = sorted(output.readlines())
     # output.close()
