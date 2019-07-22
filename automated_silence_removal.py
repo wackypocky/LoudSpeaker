@@ -8,6 +8,7 @@ import errno
 import shutil
 import sys
 import bpfilter
+import merge
 import re
 #import wave
 #import matplotlib.pyplot as plt
@@ -104,7 +105,8 @@ def main():
     # merge the files to ideally 5min lengths, but up to 10min
     source_path = dest_path
     dest_path = os.path.join(dirname, 'processed')
-    merge(source_path, dest_path)
+    merge.merge(source_path, dest_path)
+    
     # output = open("output.txt", 'r')
     # lines: List[str] = sorted(output.readlines())
     # output.close()
