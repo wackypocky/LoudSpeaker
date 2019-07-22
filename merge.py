@@ -14,9 +14,13 @@ def duration(in_filename:str):
   duration:float = len(file) / file.samplerate
   return duration
 
+def sorted_ls(path):
+  #mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
+  return list(sorted(os.listdir(path)))
+
 # merge audio into files with length 5-10min long, ideally 5min
 def merge(source_path: str, dest_path: str):
-  fnames: List[str] = os.listdir(source_path)
+  fnames: List[str] = sorted_ls(source_path)
   if not os.path.exists(dest_path):
     os.mkdir(dest_path)
   print(fnames)
@@ -69,7 +73,7 @@ def merge(source_path: str, dest_path: str):
     end_time = match.group(1)
     input.close()
 
-    destfilename:str = dest_path + '/' + first + '-to-' + last
+    destfilename:str = dest_path + '/' + start_name + '-to-' + end_time
     args: List[str] = ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', inlistname,
                        '-c', 'copy', destfilename]
     p = subprocess.Popen(args)
