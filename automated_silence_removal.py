@@ -20,7 +20,7 @@ DEFAULT_THRESHOLD = -35 #dBFS
 SILENCE_CEILING = -25
 PEAK_VOLUME_CEILING = -20 #given file Village0_2019-5-6-18-6-34.wav in May1
 LOW_THRESHOLD = '-41dB'
-HIGH_THRESHOLD = '-33dB' #based on Village0_2019-5-5-23-35-26.wav in May1
+HIGH_THRESHOLD = '-31dB' #based on Village0_2019-5-5-23-35-26.wav in May1
 MEAN_VOLUME_CEILING = -47.5 #based on Village0_2019-5-12-18-47-34.wav in May2
 
 # Check if file is silent
