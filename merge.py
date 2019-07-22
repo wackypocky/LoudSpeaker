@@ -14,13 +14,22 @@ def duration(in_filename:str):
   duration:float = len(file) / file.samplerate
   return duration
 
-def sorted_ls(path):
+# def alphanum(fname):
+#   #take the filename, return as usual, except treat strings with multiple digits as ints
+#   #'/Users/anniezhou/Documents/Summer 2019/May/silence_removed/Village0_2019-5-3-11-17-5.wav
+#   convert = lambda text: int(text) if text.isdigit() else text
+#   alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+#   return sorted(l, key = alphanum_key)
+
+def alphanum_sort(listdir):
   #mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
-  return list(sorted(os.listdir(path)))
+  convert = lambda text: int(text) if text.isdigit() else text
+  alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+  return list(sorted(listdir, key=alphanum_key))
 
 # merge audio into files with length 5-10min long, ideally 5min
 def merge(source_path: str, dest_path: str):
-  fnames: List[str] = sorted_ls(source_path)
+  fnames: List[str] = alphanum_sort(os.listdir(source_path))
   if not os.path.exists(dest_path):
     os.mkdir(dest_path)
   while fnames:
@@ -80,7 +89,7 @@ def merge(source_path: str, dest_path: str):
     p = subprocess.Popen(args)
     p.wait()
     p = subprocess.run(['rm', inlistname])
-  #p = subprocess.run(['rm', '-r', source_path])
+  p = subprocess.run(['rm', '-r', source_path])
 
 # iterate through the directories given as command line arguments
 def main():

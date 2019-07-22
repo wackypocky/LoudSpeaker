@@ -30,7 +30,7 @@ def filter(source_path: str, dest_path: str):
       continue
     path_to_file = os.path.join(source_path, fname)
     args: List[str] = ['ffmpeg', '-i', path_to_file, '-af',
-                       'lowpass=2750,highpass=300', dest_path + '/' + fname]
+                       'lowpass=2750,highpass=300', dest_path + '/' + fname] #2750 for June
     p = subprocess.Popen(args)
     p.wait()
 

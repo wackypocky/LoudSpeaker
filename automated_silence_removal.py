@@ -18,9 +18,9 @@ from pydub import AudioSegment
 DEFAULT_DURATION = 2 #seconds
 DEFAULT_THRESHOLD = -35 #dBFS
 SILENCE_CEILING = -25
-PEAK_VOLUME_CEILING = -19.2 #given file Village0_2019-6-7-20-38-20.wav in June
+PEAK_VOLUME_CEILING = -18.3 #given file Village0_2019-5-6-18-6-34.wav in May1
 LOW_THRESHOLD = '-41dB'
-HIGH_THRESHOLD = '-32dB'
+HIGH_THRESHOLD = '-31dB' #based on Village0_2019-5-5-23-35-26.wav in May1
 MEAN_VOLUME_CEILING = -45.3 #based on Village0_2019-6-7-20-36-20.wav in June
 
 # Check if file is silent
@@ -100,17 +100,17 @@ def main():
     # first pass to cut pure silence in audio files
     source_path = dest_path
     dest_path = os.path.join(dirname, 'silence_removed')
-    remove_silence(source_path, dest_path, LOW_THRESHOLD)
+    remove_silence(source_path, dest_path, HIGH_THRESHOLD)
 
     # merge the files to ideally 5min lengths, but up to 10min
     source_path = dest_path
-    dest_path = os.path.join(dirname, 'processed')
+    dest_path = os.path.join(dirname, 'merged')
     merge.merge(source_path, dest_path)
 
     # second pass to cut pure silence in audio files (to get rid of concat silence)
     source_path = dest_path
-    dest_path = os.path.join(dirname, 'silence_removed')
-    remove_silence(source_path, dest_path, LOW_THRESHOLD)
+    dest_path = os.path.join(dirname, 'processed')
+    remove_silence(source_path, dest_path, HIGH_THRESHOLD)
 
 if __name__ == '__main__':
   main()
