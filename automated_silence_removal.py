@@ -19,7 +19,7 @@ DEFAULT_DURATION = 2 #seconds
 DEFAULT_THRESHOLD = -35 #dBFS
 SILENCE_CEILING = -25
 PEAK_VOLUME_CEILING = -19.2 #given file Village0_2019-6-7-20-38-20.wav in June
-LOW_THRESHOLD = '-42dB'
+LOW_THRESHOLD = '-41dB'
 HIGH_THRESHOLD = '-32dB'
 MEAN_VOLUME_CEILING = -45.3 #based on Village0_2019-6-7-20-36-20.wav in June
 
@@ -92,12 +92,12 @@ def main():
     dest_path = os.path.join(dirname, 'bp_filtered')
     bpfilter.filter(dirname, dest_path)
 
-    # second pass through files to eliminate noise files
+    # first pass through files to eliminate noise files
     source_path = dest_path
     dest_path = os.path.join(dirname, 'filtered')
     filter_empty_audio(source_path, dest_path, MEAN_VOLUME_CEILING, PEAK_VOLUME_CEILING)
 
-    # second pass to cut pure silence in audio files
+    # first pass to cut pure silence in audio files
     source_path = dest_path
     dest_path = os.path.join(dirname, 'silence_removed')
     remove_silence(source_path, dest_path, LOW_THRESHOLD)
@@ -106,14 +106,11 @@ def main():
     source_path = dest_path
     dest_path = os.path.join(dirname, 'processed')
     merge.merge(source_path, dest_path)
-    
-    # output = open("output.txt", 'r')
-    # lines: List[str] = sorted(output.readlines())
-    # output.close()
-    # output = open("output.txt", 'w')
-    # sorted_data:str = '\n'.join(lines)
-    # print(sorted_data, file=output)
-    # output.close()
+
+    # second pass to cut pure silence in audio files (to get rid of concat silence)
+    source_path = dest_path
+    dest_path = os.path.join(dirname, 'silence_removed')
+    remove_silence(source_path, dest_path, LOW_THRESHOLD)
 
 if __name__ == '__main__':
   main()

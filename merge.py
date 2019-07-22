@@ -80,6 +80,7 @@ def merge(source_path: str, dest_path: str):
     p = subprocess.Popen(args)
     p.wait()
     p = subprocess.run(['rm', inlistname])
+  #p = subprocess.run(['rm', '-r', source_path])
 
 # iterate through the directories given as command line arguments
 def main():
