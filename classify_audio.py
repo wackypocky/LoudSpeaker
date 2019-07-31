@@ -8,8 +8,8 @@ import glob
 import warnings
 import math
 
-import librosa
-import librosa.display
+#import librosa
+#import librosa.display
 import pydub
 from pydub import AudioSegment
 import IPython
@@ -23,7 +23,8 @@ CWD = os.getcwd()
 INPUT_PATH = os.path.join(CWD, 'data_curation_staging')
 DATA_ROOT = './data'
 DATA_RAW = os.path.join(DATA_ROOT, 'raw_source_clips')
-STATS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+STATS = [0] * 10
+BABY_HOURS = [0] * 24
 # MALE_DIR = os.path.join(DATA_RAW, 'adult_male')
 # FEMALE_DIR = os.path.join(DATA_RAW, 'adult_female')
 # MALE_PAREN_DIR = os.path.join(DATA_RAW, 'adult_male_parentese')
@@ -71,7 +72,7 @@ STATS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 # convert class_num from int or str to proper type and value
 # possible original formats: 2 (int) or '2, 3' (str)
-def get_class(fclass, duration_ms:int):
+def get_class(fclass, duration_ms:int, time_hour:int):
   if type(fclass) is not str:
     STATS[fclass] += duration_ms
     this_class = str(fclass)
@@ -81,6 +82,8 @@ def get_class(fclass, duration_ms:int):
       for class_num in class_nums:
         STATS[int(class_num)] += duration_ms
     this_class = fclass
+  if re.search('[56789]', this_class):  # if this clip contains baby sounds
+    BABY_HOURS[time_hour] += duration_ms
   this_class = this_class.replace(" ", "")
   class_path = os.path.join(DATA_RAW, this_class)
   if not os.path.exists(class_path):
@@ -99,6 +102,8 @@ def time_str_to_int(time:str):
   total_ms: int = min_ms + sec_ms
   return total_ms
 
+# Clip the specified audio and put it in the corresponding folder
+# format of fname: "Village0_2019-6-7-16-59-18"
 def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
   # If name is blank, use previous fname. If no previous fname, exit with error
   if pd.isnull(fname):
@@ -111,6 +116,11 @@ def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
 
   # Load original_clip corresponding with fname
   # extension = fname.split('.')[-1]
+  match = re.search('\w+-\d+-\d+-(\d+)-\d+-\d+', fname)
+  if not match:
+    sys.stderr.write('Couldn\'t find base name!\n')
+    sys.exit(1)
+  time_hour:int = int(match.group(1))
   fname_full = fname + ".wav"
   input_file = os.path.join(INPUT_PATH, fname_full)
   original_clip = AudioSegment.from_wav(input_file)
@@ -136,7 +146,7 @@ def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
 
   # Put clipped audio into directory corresponding with class
   duration_ms:int = len(new_clip)
-  class_path:str = get_class(this_class, duration_ms)
+  class_path:str = get_class(this_class, duration_ms, time_hour)
   new_clip_path:str = os.path.join(class_path, this_clip_name)
   new_clip.export(new_clip_path, format="wav")
 
@@ -154,10 +164,17 @@ def parse(xl_name: str):
 
 # Display the distribution of classes with a pie chart
 def pie():
+  pie_name = os.path.join(DATA_ROOT, 'audio_stats.png')
   classes = ['Male', 'Female', 'Male_paren', 'Female_paren',
              'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
   plt.pie(STATS[1:], labels=classes)
-  plt.show()
+  plt.savefig(pie_name)
+
+def baby_hours():
+  baby_stats_name = os.path.join(DATA_ROOT, 'baby_audio_stats.xlsx')
+  baby_hours_in_sec = [time / 1000 for time in BABY_HOURS]
+  df = pd.DataFrame(data=baby_hours_in_sec)
+  df.to_excel(baby_stats_name)
 
 def main():
   args = sys.argv[1:]
@@ -179,6 +196,7 @@ def main():
     parse(fname)
 
   pie()
+  baby_hours()
 
 if __name__ == '__main__':
   main()
