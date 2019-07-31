@@ -9,6 +9,7 @@ import re
 from pydub import AudioSegment
 import soundfile as sf
 
+# returns duration in seconds
 def duration(in_filename:str):
   file = sf.SoundFile(in_filename)
   duration:float = len(file) / file.samplerate

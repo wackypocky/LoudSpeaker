@@ -23,7 +23,7 @@ CWD = os.getcwd()
 INPUT_PATH = os.path.join(CWD, 'data_curation_staging')
 DATA_ROOT = './data'
 DATA_RAW = os.path.join(DATA_ROOT, 'raw_source_clips')
-
+STATS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 # MALE_DIR = os.path.join(DATA_RAW, 'adult_male')
 # FEMALE_DIR = os.path.join(DATA_RAW, 'adult_female')
 # MALE_PAREN_DIR = os.path.join(DATA_RAW, 'adult_male_parentese')
@@ -71,11 +71,17 @@ DATA_RAW = os.path.join(DATA_ROOT, 'raw_source_clips')
 
 # convert class_num from int or str to proper type and value
 # possible original formats: 2 (int) or '2, 3' (str)
-def get_class(fclass):
+def get_class(fclass, duration_ms:int):
   if type(fclass) is not str:
-     this_class = str(fclass)
+    STATS[fclass] += duration_ms
+    this_class = str(fclass)
   else:
+    if fclass != 'noise':
+      class_nums = fclass.split(',')
+      for class_num in class_nums:
+        STATS[int(class_num)] += duration_ms
     this_class = fclass
+  this_class = this_class.replace(" ", "")
   class_path = os.path.join(DATA_RAW, this_class)
   if not os.path.exists(class_path):
     os.mkdir(class_path)
@@ -93,7 +99,7 @@ def time_str_to_int(time:str):
   total_ms: int = min_ms + sec_ms
   return total_ms
 
-def clip(fname:str, start:str, end:str, fclass, fnames: List[str]):
+def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
   # If name is blank, use previous fname. If no previous fname, exit with error
   if pd.isnull(fname):
     if not fnames:
@@ -109,6 +115,11 @@ def clip(fname:str, start:str, end:str, fclass, fnames: List[str]):
   input_file = os.path.join(INPUT_PATH, fname_full)
   original_clip = AudioSegment.from_wav(input_file)
 
+  # Set defaults
+  this_class = 'noise'
+  new_clip = original_clip
+  this_clip_name:str = fname_full
+
   # if file is empty/noise/no classes
   if not pd.isnull(fclass):
     # convert from seconds to milliseconds
@@ -120,15 +131,17 @@ def clip(fname:str, start:str, end:str, fclass, fnames: List[str]):
     # this_class = None  # reset as a safeguard
     # new_clip
     # ********************************
+    this_class = fclass
+    this_clip_name = fname + '_' + start + '-' + end + ".wav"
 
-    # Put clipped audio into directory corresponding with class
-    class_path:str = get_class(fclass)
-    this_clip:str = fname + '_' + start + '-' + end + ".wav"
-    new_clip.export(os.path.join(class_path, this_clip), format="wav")
+  # Put clipped audio into directory corresponding with class
+  duration_ms:int = len(new_clip)
+  class_path:str = get_class(this_class, duration_ms)
+  new_clip_path:str = os.path.join(class_path, this_clip_name)
+  new_clip.export(new_clip_path, format="wav")
 
-  else:
-    class_path:str = get_class('noise')
-    original_clip.export(os.path.join(class_path, fname_full), format="wav")
+  # Update STATS
+
 
 # Parse Excel files to grab audio file 'name', 'start_time', 'end_time', 'class'
 # Example format: 'Village0_2019-6-8-19-25-29  00:00  00:05  6  High'
@@ -139,76 +152,12 @@ def parse(xl_name: str):
   fnames = []
   dfs.apply(lambda row: clip(row['name'], row['start'], row['end'], row['class'], fnames), axis=1)
 
-# # Load files from data_curation_staging folder
-# # ****** DO NOT MODIFY THIS ******
-#
-# # get all staged filenames
-# file_names = [os.path.basename(name) for name in glob.glob(INPUT_PATH + '/*')]
-# print('Number of files still in staging folder:', len(file_names))
-#
-# # we'll work only with the first entry
-# input_file_name = file_names[0]
-# extension = input_file_name.split('.')[-1]
-# print('Name of Input File:', input_file_name)
-# print('Extracted Extension:', extension)
-#
-# # load into pydyb
-# input_file = os.path.join(INPUT_PATH, input_file_name)
-# original_clip = AudioSegment.from_file(input_file, format=extension)
-# print('Length of original clip (ms):', len(original_clip))
-#
-# # # we'll also load into librosa for easy waveform visualization
-# # audio_clip, sampling_rate = librosa.load(input_file)
-# # IPython.display.Audio(data=audio_clip, rate=sampling_rate)
-# # plt.figure(figsize=(12, 4))
-# # fig = librosa.display.waveplot(audio_clip, sr=sampling_rate)
-#
-# # # the notebook will auto-embed an audio player
-# # original_clip
-#
-# # ********************************
-#
-# # trim clip and sample audio
-# start_time_ms = 000
-# end_time_ms = 45000
-# #end_time_ms = len(original_clip)
-#
-#
-# # ****** DO NOT MODIFY THIS ******
-# new_clip = original_clip[start_time_ms:end_time_ms]
-# this_class = None  # reset as a safeguard
-# new_clip
-# # ********************************
-#
-# # Classify the audio clip
-# # first select the correct class... be sure about your selection!
-#
-# # this_class = "baby_babble"
-# # this_class = "baby_cry"
-# # this_class = "baby_laugh"
-# # this_class = "adult_infant_directed"
-# this_class = "domestic_background"
-#
-# # was this file obtained through a URL?
-# #this_URL = 'https://freesound.org/people/Ephemeral_Rift/sounds/77447/'
-# this_URL = None
-#
-# # add a description (optional, mostly for background sounds)
-# # description_string = "now henry look over here"
-# # description_string = "bathtub with water splashing"
-# description_string = None
-#
-#
-#
-# # ****** DO NOT MODIFY THIS ******
-# print('***\nThis clip has been categorized as:', this_class)
-# print('Description:', description_string, '\n***')
-#
-# if this_URL is None:
-#     print('\nNo source URL has been specified.')
-# else:
-#     print('\nSource clip was downloaded from:', this_URL)
-# # ********************************
+# Display the distribution of classes with a pie chart
+def pie():
+  classes = ['Male', 'Female', 'Male_paren', 'Female_paren',
+             'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
+  plt.pie(STATS[1:], labels=classes)
+  plt.show()
 
 def main():
   args = sys.argv[1:]
@@ -223,12 +172,13 @@ def main():
     os.mkdir(DATA_ROOT)
   if not os.path.exists(DATA_RAW):
     os.mkdir(DATA_RAW)
-    
+
   for fname in args:
     if not fname.lower().endswith(('.xlsx')):
       continue
     parse(fname)
 
+  pie()
 
 if __name__ == '__main__':
   main()
