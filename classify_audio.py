@@ -1,4 +1,4 @@
-import subprocess
+#import subprocess
 import os
 import errno
 import shutil
@@ -162,19 +162,19 @@ def parse(xl_name: str):
   fnames = []
   dfs.apply(lambda row: clip(row['name'], row['start'], row['end'], row['class'], fnames), axis=1)
 
-# Display the distribution of classes with a pie chart
-def pie():
-  pie_name = os.path.join(DATA_ROOT, 'audio_stats.png')
-  classes = ['Male', 'Female', 'Male_paren', 'Female_paren',
-             'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
-  plt.pie(STATS[1:], labels=classes)
-  plt.savefig(pie_name)
-
-def baby_hours():
-  baby_stats_name = os.path.join(DATA_ROOT, 'baby_audio_stats.xlsx')
-  baby_hours_in_sec = [time / 1000 for time in BABY_HOURS]
-  df = pd.DataFrame(data=baby_hours_in_sec)
-  df.to_excel(baby_stats_name)
+# # Display the distribution of classes with a pie chart
+# def pie():
+#   pie_name = os.path.join(DATA_ROOT, 'audio_stats.png')
+#   classes = ['Male', 'Female', 'Male_paren', 'Female_paren',
+#              'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
+#   plt.pie(STATS[1:], labels=classes)
+#   plt.savefig(pie_name)
+#
+# def baby_hours():
+#   baby_stats_name = os.path.join(DATA_ROOT, 'baby_audio_stats.xlsx')
+#   baby_hours_in_sec = [time / 1000 for time in BABY_HOURS]
+#   df = pd.DataFrame(data=baby_hours_in_sec)
+#   df.to_excel(baby_stats_name)
 
 def main():
   args = sys.argv[1:]
@@ -195,8 +195,8 @@ def main():
       continue
     parse(fname)
 
-  pie()
-  baby_hours()
+  #pie()
+  #baby_hours()
 
 if __name__ == '__main__':
   main()

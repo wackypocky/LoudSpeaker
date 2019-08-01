@@ -13,9 +13,13 @@ import IPython
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def iterate_dirs(source_dir:str, audio_by_class:List[int] = [0] * 10,
-                 baby_hours:List[int] = [0] * 24, non_speech_dur:int = 0,
+def iterate_dirs(source_dir:str, data_tuple = None, non_speech_dur:int = 0,
                  speech_dur:int = 0):
+  if data_tuple is None:
+    audio_by_class = [0] * 10
+    baby_hours = [0] * 24
+  else:
+    (audio_by_class, baby_hours) = data_tuple
   entries = os.scandir(source_dir)
   for entry in entries:
     # if entry is not a subdirectory
@@ -60,9 +64,10 @@ def iterate_dirs(source_dir:str, audio_by_class:List[int] = [0] * 10,
 
 # Create a pie chart w/ given data (list of ints)
 def pie(name:str, dest_dir:str, data:List[int], labels:List[str]):
-  pie_name:str = os.path.join(dest_dir, name)
+  pie_path:str = os.path.join(dest_dir, name)
   plt.pie(data, labels=labels)
-  plt.savefig(pie_name)
+  plt.savefig(pie_path)
+  plt.clf()
 
 # # Create a bar graph w/ given data (list of ints)
 # def bar(data:List[int]):
@@ -80,24 +85,43 @@ def to_excel(xl_name:str, dest_dir:str, data:List[int], labels:List[str] = []):
 def main():
   args = sys.argv[1:]
   if not args:
-    print("error: must specify one or more directories as input");
+    print('usage: stats.py {--by_dir | --total} file');
     sys.exit(1)
 
+  option = args[0]
+  dirs = args[1:]
+  classes:List[str] = ['Male', 'Female', 'Male_paren', 'Female_paren',
+                       'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
+  labels:List[str] = ['Speech (adult/baby)', 'Non-speech (silence/noise)']
+
   # iterate through input directories
-  for dirname in args:
+  for dirname in dirs:
     entries = os.listdir(dirname)
     if not entries:  # if the directory is empty, continue
       continue
-    (audio_by_class, baby_hours, non_speech_dur, speech_dur) = iterate_dirs(dirname)
-    classes = ['Male', 'Female', 'Male_paren', 'Female_paren',
-               'Babble_marg', 'Babble_dup', 'Babble_var', 'Baby_coo', 'Baby_cry']
+    if option == '--by_dir':
+      (audio_by_class, baby_hours, non_speech_dur, speech_dur) = iterate_dirs(dirname)
+      audio_by_class = audio_by_class[1:] # don't include first cell
+      to_excel('audio_by_class.xlsx', dirname, audio_by_class, classes)
+      to_excel('baby_hours.xlsx', dirname, baby_hours)
+      speech_vs_noise:List[int] = [speech_dur, non_speech_dur]
+      to_excel('speech_vs_noise.xlsx', dirname, speech_vs_noise, labels)
+      pie('audio_by_class.png', dirname, audio_by_class, classes)
+    else:
+      if dirname == dirs[0]:
+        (audio_by_class, baby_hours, non_speech_dur, speech_dur) = iterate_dirs(dirname)
+      else:
+        (audio_by_class, baby_hours, non_speech_dur, speech_dur) = iterate_dirs(dirname, (audio_by_class, baby_hours), non_speech_dur, speech_dur)
+
+  # Create total stats over all directories if option is --total in cwd
+  if option == '--total':
+    cwd = os.getcwd()
     audio_by_class = audio_by_class[1:] # don't include first cell
-    to_excel('audio_by_class.xlsx', dirname, audio_by_class, classes)
-    to_excel('baby_hours.xlsx', dirname, baby_hours)
-    labels:List[str] = ['Speech (adult/baby)', 'Non-speech (silence/noise)']
+    to_excel('audio_by_class.xlsx', cwd, audio_by_class, classes)
+    to_excel('baby_hours.xlsx', cwd, baby_hours)
     speech_vs_noise:List[int] = [speech_dur, non_speech_dur]
-    to_excel('speech_vs_noise.xlsx', dirname, speech_vs_noise, labels)
-    pie('audio_by_class.png', dirname, audio_by_class, classes)
+    to_excel('speech_vs_noise.xlsx', cwd, speech_vs_noise, labels)
+    pie('audio_by_class.png', cwd, audio_by_class, classes)
 
 if __name__ == '__main__':
   main()
