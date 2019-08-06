@@ -12,7 +12,7 @@ import math
 #import librosa.display
 import pydub
 from pydub import AudioSegment
-import IPython
+# import IPython
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -20,11 +20,11 @@ from typing import List, Dict
 
 # paths
 CWD = os.getcwd()
-INPUT_PATH = os.path.join(CWD, 'data_curation_staging')
+# INPUT_PATH = os.path.join(CWD, 'data_curation_staging')
 DATA_ROOT = './data'
 DATA_RAW = os.path.join(DATA_ROOT, 'raw_source_clips')
-STATS = [0] * 10
-BABY_HOURS = [0] * 24
+# STATS = [0] * 10
+# BABY_HOURS = [0] * 24
 # MALE_DIR = os.path.join(DATA_RAW, 'adult_male')
 # FEMALE_DIR = os.path.join(DATA_RAW, 'adult_female')
 # MALE_PAREN_DIR = os.path.join(DATA_RAW, 'adult_male_parentese')
@@ -74,16 +74,16 @@ BABY_HOURS = [0] * 24
 # possible original formats: 2 (int) or '2, 3' (str)
 def get_class(fclass, duration_ms:int, time_hour:int):
   if type(fclass) is not str:
-    STATS[fclass] += duration_ms
+    #STATS[fclass] += duration_ms
     this_class = str(fclass)
   else:
-    if fclass != 'noise':
-      class_nums = fclass.split(',')
-      for class_num in class_nums:
-        STATS[int(class_num)] += duration_ms
+    # if fclass != 'noise':
+      # class_nums = fclass.split(',')
+      # for class_num in class_nums:
+      #   STATS[int(class_num)] += duration_ms
     this_class = fclass
-  if re.search('[56789]', this_class):  # if this clip contains baby sounds
-    BABY_HOURS[time_hour] += duration_ms
+  # if re.search('[56789]', this_class):  # if this clip contains baby sounds
+  #   BABY_HOURS[time_hour] += duration_ms
   this_class = this_class.replace(" ", "")
   class_path = os.path.join(DATA_RAW, this_class)
   if not os.path.exists(class_path):
@@ -104,7 +104,7 @@ def time_str_to_int(time:str):
 
 # Clip the specified audio and put it in the corresponding folder
 # format of fname: "Village0_2019-6-7-16-59-18"
-def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
+def clip(fname:str, start:str, end:str, fclass, fnames:List[str], input_path:str):
   # If name is blank, use previous fname. If no previous fname, exit with error
   if pd.isnull(fname):
     if not fnames:
@@ -118,11 +118,11 @@ def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
   # extension = fname.split('.')[-1]
   match = re.search('\w+-\d+-\d+-(\d+)-\d+-\d+', fname)
   if not match:
-    sys.stderr.write('Couldn\'t find base name!\n')
+    sys.stderr.write('Couldn\'t find hour!\n')
     sys.exit(1)
   time_hour:int = int(match.group(1))
   fname_full = fname + ".wav"
-  input_file = os.path.join(INPUT_PATH, fname_full)
+  input_file = os.path.join(input_path, fname_full)
   original_clip = AudioSegment.from_wav(input_file)
 
   # Set defaults
@@ -150,17 +150,15 @@ def clip(fname:str, start:str, end:str, fclass, fnames:List[str]):
   new_clip_path:str = os.path.join(class_path, this_clip_name)
   new_clip.export(new_clip_path, format="wav")
 
-  # Update STATS
-
 
 # Parse Excel files to grab audio file 'name', 'start_time', 'end_time', 'class'
 # Example format: 'Village0_2019-6-8-19-25-29  00:00  00:05  6  High'
-def parse(xl_name: str):
+def parse(xl_name: str, input_path:str):
   #xl_file = pd.ExcelFile(fname)
   col_names = ['name', 'start', 'end', 'class']
   dfs = pd.read_excel(xl_name, names=col_names, usecols=[0,1,2,3]) # panda Dataframe type
   fnames = []
-  dfs.apply(lambda row: clip(row['name'], row['start'], row['end'], row['class'], fnames), axis=1)
+  dfs.apply(lambda row: clip(row['name'], row['start'], row['end'], row['class'], fnames, input_path), axis=1)
 
 # # Display the distribution of classes with a pie chart
 # def pie():
@@ -179,21 +177,23 @@ def parse(xl_name: str):
 def main():
   args = sys.argv[1:]
   if not args:
-    print("error: must specify one or more files as input");
+    print('usage: classify_audio.py dir');
     sys.exit(1)
 
   # make_all_dirs()
-  if not os.path.exists(INPUT_PATH):
-    os.mkdir(INPUT_PATH)
+  # if not os.path.exists(INPUT_PATH):
+  #   os.mkdir(INPUT_PATH)
+  input_path = args[0]
   if not os.path.exists(DATA_ROOT):
     os.mkdir(DATA_ROOT)
   if not os.path.exists(DATA_RAW):
     os.mkdir(DATA_RAW)
 
-  for fname in args:
+  fnames = os.listdir(CWD)
+  for fname in fnames:
     if not fname.lower().endswith(('.xlsx')):
       continue
-    parse(fname)
+    parse(fname, input_path)
 
   #pie()
   #baby_hours()

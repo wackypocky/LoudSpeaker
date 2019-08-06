@@ -4,7 +4,7 @@ from typing import List, Dict
 
 import pydub
 from pydub import AudioSegment
-import IPython
+# import IPython
 import stats
 
 def duration_dir(source_path:str):
@@ -22,24 +22,27 @@ def duration_dir(source_path:str):
 def main():
   args = sys.argv[1:]
   if not args:
-    print('usage: stats_client.py final_dir raw_dirs');
+    print('usage: stats_client.py raw_dirs final_dir');
     sys.exit(1)
-
-  final_dir = args[0]
-  raw_dirs = args[1:]
 
   # iterate through raw directories OR take the existing duration
   cwd = os.getcwd()
-  path_to_file = os.path.join(cwd, 'total_dur_raw.txt')
-  if os.path.exists(path_to_file):
+  path_to_file:str = os.path.join(cwd, "total_dur_raw.txt")
+  if len(args) == 1:
+    if not os.path.exists(path_to_file):
+      print('error: total_dur_raw.txt file does not exist')
+      sys.exit(1)
+    final_dir = args[0]
     with open(path_to_file) as f:
       initial_dur:int = int(f.read())
   else:
+    raw_dirs = args[:-1]
+    final_dir = args[-1]
     initial_dur:int = 0
     for dirname in raw_dirs:
       initial_dur += duration_dir(dirname)
-    f = open(path_to_file), 'w')
-    f.write(initial_dur)
+    f = open(path_to_file, 'w')
+    f.write(str(initial_dur))
     f.close()
 
   # grab stats using final_dir as input
@@ -55,7 +58,6 @@ def main():
   hours:List[str] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
                      '11', '12', '13', '14', '15', '16', '17', '18', '19',
                      '20', '21', '22', '23']
-  cwd = os.getcwd()
   stats.to_excel('speech_vs_noise', cwd, speech_vs_noise, labels)
   stats.to_excel('audio_by_class', cwd, audio_by_class, classes)
   stats.to_excel('baby_hours', cwd, baby_hours)
