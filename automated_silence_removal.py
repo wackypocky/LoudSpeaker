@@ -1,4 +1,4 @@
-# Goal: automating the detection/removal of silent files, +90% white noise files,
+# Automates the detection/removal of silent files, +90% white noise files,
 # and the removal of silent periods within audio files
 
 #from ffmpy import FFmpeg
@@ -15,10 +15,10 @@ from pydub import AudioSegment
 DEFAULT_DURATION = 2 #seconds
 DEFAULT_THRESHOLD = -35 #dBFS
 SILENCE_CEILING = -25
-PEAK_VOLUME_CEILING = -20 #given file Village0_2019-5-6-18-6-34.wav in May1
+PEAK_VOLUME_CEILING = -20
 LOW_THRESHOLD = '-41dB'
-HIGH_THRESHOLD = '-31dB' #based on Village0_2019-5-5-23-35-26.wav in May1
-MEAN_VOLUME_CEILING = -47.5 #based on Village0_2019-5-12-18-47-34.wav in May2
+HIGH_THRESHOLD = '-31dB'
+MEAN_VOLUME_CEILING = -47.5
 
 # Check if file is silent
 def is_silent(in_filename: str, mean_ceiling: int, peak_ceiling:int):
@@ -33,9 +33,9 @@ def is_silent(in_filename: str, mean_ceiling: int, peak_ceiling:int):
   mean_volume = float(match.group(1))
   sound = AudioSegment.from_file(in_filename)
   peak_amplitude = sound.max_dBFS
-  f = open("output.txt", "a")
-  print(in_filename, "mean_vol:", mean_volume, "peak:", peak_amplitude, file=f)
-  f.close()
+  # f = open("output.txt", "a")
+  # print(in_filename, "mean_vol:", mean_volume, "peak:", peak_amplitude, file=f)
+  # f.close()
   if mean_volume < mean_ceiling or peak_amplitude < peak_ceiling:
     return True
   else:
@@ -67,7 +67,6 @@ def filter_empty_audio(source_path:str, dest_path:str, mean_ceiling:int, peak_ce
   for fname in fnames:
     if not fname.lower().endswith(('.wav', '.m4a', '.mp3', 'mp4')):
       continue
-    #plot(fname)
     path_to_file = os.path.join(source_path, fname)
     abspath = os.path.abspath(path_to_file)
     if is_silent(abspath, mean_ceiling, peak_ceiling):
