@@ -6,18 +6,19 @@ import re
 import glob
 import warnings
 from typing import List, Dict
-
 import pydub
 from pydub import AudioSegment
-# import IPython
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import datetime
 
 def iterate_dirs(source_dir:str, data_tuple = None, speech_dur:int = 0):
   if data_tuple is None:
     audio_by_class = [0] * 10
     baby_hours = [0] * 24
+    baby_days =  {'Babble (marg)': [0] * 7, 'Babble (dup)': [0] * 7,
+                  'Babble (var)': [0] * 7, 'Coo': [0] * 7, 'Cry': [0] * 7}
   else:
     (audio_by_class, baby_hours) = data_tuple
   entries = os.scandir(source_dir)
@@ -37,6 +38,8 @@ def iterate_dirs(source_dir:str, data_tuple = None, speech_dur:int = 0):
       if not fname.lower().endswith(('.wav')):
         continue
       clip_path:str = os.path.join(entry.path, fname)
+      if os.path.getsize(clip_path) < 1000:  # in case the clip is empty
+        continue
       this_clip = AudioSegment.from_wav(clip_path)
       duration_ms:int = len(this_clip)
 
@@ -46,20 +49,37 @@ def iterate_dirs(source_dir:str, data_tuple = None, speech_dur:int = 0):
 
       # otherwise, update stats
       speech_dur += duration_ms
-      class_nums:List[str] = dir_name.split(',')
+
       # update class stats
+      class_nums:List[str] = dir_name.split(',')
       for class_num in class_nums:
         audio_by_class[int(class_num)] += duration_ms
 
-      # update baby_hours if current directory contains baby audio
+      # if current directory contains baby audio, update baby_days and baby_hours
       if re.search('[56789]', dir_name):
-        match = re.search('\w+-\d+-\d+-(\d+)-\d+-\d+', fname)
+        match = re.search('[^\W_]+_(\d+-\d+-\d+)-(\d+)-\d+-\d+', fname)
         if not match:
           sys.stderr.write('Couldn\'t find hour!\n')
           sys.exit(1)
-        time_hour:int = int(match.group(1))
+        # record weekday to update baby_days
+        date:List[str] = match.group(1).split('-')
+        this_date = datetime.date(int(date[0]), int(date[1]), int(date[2]))
+        weekday:int = this_date.weekday()
+
+        # update baby_days
+        classes = ['', '', '', '', '',
+                   'Babble (marg)', 'Babble (dup)', 'Babble (var)',
+                   'Coo', 'Cry']
+        for class_num in class_nums:
+          dict_key = classes[int(class_num)]
+          if dict_key != '':
+            baby_days[dict_key][weekday] += duration_ms
+
+        # update baby_hours
+        time_hour:int = int(match.group(2))
         baby_hours[time_hour] += duration_ms
-  return (audio_by_class[1:], baby_hours, speech_dur)
+
+  return (audio_by_class[1:], baby_hours, baby_days, speech_dur)
 
 # Create a pie chart w/ given data (list of ints)
 def pie(name:str, dest_dir:str, data:List[int], labels:List[str]):
@@ -84,14 +104,14 @@ def bar(name:str, dest_dir:str, data:List[int], labels:List[str], x_label:str):
   plt.clf()
 
 # Create an excel file w/ given data (list of ints)
-def to_excel(xl_name:str, dest_dir:str, data:List[int], labels:List[str] = []):
+def to_excel(xl_name:str, dest_dir:str, data, labels:List[str] = []):
   xl_full_name = xl_name + '.xlsx'
   xl_path:str = os.path.join(dest_dir, xl_full_name)
-  data_in_sec = [time / 1000 for time in data]
+  #data_in_sec = [time / 1000 for time in data]
   if labels:
-    df = pd.DataFrame(data=data_in_sec, index=labels, columns=['Duration (sec)'])
+    df = pd.DataFrame(data=data, index=labels, columns=['Duration (ms)'])
   else:
-    df = pd.DataFrame(data=data_in_sec, columns=['Duration (sec)'])
+    df = pd.DataFrame(data=data)
   df.to_excel(xl_path)
 
 # optional usage of stats over multiple directories
@@ -112,24 +132,26 @@ def main():
     if not entries:  # if the directory is empty, continue
       continue
     if option == '--by_dir':
-      (audio_by_class, baby_hours, speech_dur) = iterate_dirs(dirname)
+      (audio_by_class, baby_hours, baby_days, speech_dur) = iterate_dirs(dirname)
       print(dirname, ":", speech_dur)
-      to_excel('audio_by_class.xlsx', dirname, audio_by_class, classes)
-      to_excel('baby_hours.xlsx', dirname, baby_hours)
-      pie('audio_by_class.png', dirname, audio_by_class, classes)
+      to_excel('audio_by_class', dirname, audio_by_class, classes)
+      to_excel('baby_hours', dirname, baby_hours)
+      to_excel('baby_days', dirname, baby_days)
+      pie('audio_by_class', dirname, audio_by_class, classes)
     else:
       if dirname == dirs[0]:
-        (audio_by_class, baby_hours, speech_dur) = iterate_dirs(dirname)
+        (audio_by_class, baby_hours, baby_days, speech_dur) = iterate_dirs(dirname)
       else:
-        (audio_by_class, baby_hours, speech_dur) = iterate_dirs(dirname, (audio_by_class, baby_hours), speech_dur)
+        (audio_by_class, baby_hours, baby_days, speech_dur) = iterate_dirs(dirname, (audio_by_class, baby_hours, baby_days), speech_dur)
 
   # Create total stats over all directories if option is --total in cwd
   if option == '--total':
     cwd = os.getcwd()
     print(dirname, ":", speech_dur)
-    to_excel('audio_by_class.xlsx', cwd, audio_by_class, classes)
-    to_excel('baby_hours.xlsx', cwd, baby_hours)
-    pie('audio_by_class.png', cwd, audio_by_class, classes)
+    to_excel('audio_by_class', cwd, audio_by_class, classes)
+    to_excel('baby_hours', cwd, baby_hours)
+    to_excel('baby_days', cwd, baby_days)
+    pie('audio_by_class', cwd, audio_by_class, classes)
 
 if __name__ == '__main__':
   main()

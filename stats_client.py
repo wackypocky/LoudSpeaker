@@ -1,10 +1,8 @@
 import os
 import sys
 from typing import List, Dict
-
 import pydub
 from pydub import AudioSegment
-# import IPython
 import stats
 
 def duration_dir(source_path:str):
@@ -46,7 +44,7 @@ def main():
     f.close()
 
   # grab stats using final_dir as input
-  (audio_by_class, baby_hours, speech_dur) = stats.iterate_dirs(final_dir)
+  (audio_by_class, baby_hours, baby_days, speech_dur) = stats.iterate_dirs(final_dir)
   non_speech_dur:int = initial_dur - speech_dur
   speech_vs_noise:List[int] = [speech_dur, non_speech_dur]
 
@@ -58,12 +56,15 @@ def main():
   hours:List[str] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
                      '11', '12', '13', '14', '15', '16', '17', '18', '19',
                      '20', '21', '22', '23']
+  days:List[str] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                    'Saturday', 'Sunday']
   stats.to_excel('speech_vs_noise', cwd, speech_vs_noise, labels)
   stats.to_excel('audio_by_class', cwd, audio_by_class, classes)
-  stats.to_excel('baby_hours', cwd, baby_hours)
+  stats.to_excel('Total_baby_audio_per_hour_over_all_recordings', cwd, baby_hours, hours)
+  stats.to_excel('Baby_audio_by_class_per_day', cwd, baby_days)
   stats.pie('audio_by_class', cwd, audio_by_class, classes)
   stats.pie('speech_vs_noise', cwd, speech_vs_noise, labels)
-  stats.bar('baby_hours', cwd, baby_hours, hours, 'Hour (24-hour clock)')
+  stats.bar('Total_baby_audio_per_hour_over_all_recordings', cwd, baby_hours, hours, 'Hour (24-hour clock)')
 
 if __name__ == '__main__':
   main()

@@ -10,10 +10,7 @@ import sys
 import bpfilter
 import merge
 import re
-#import wave
-#import matplotlib.pyplot as plt
 from pydub import AudioSegment
-#import soundfile as sf
 
 DEFAULT_DURATION = 2 #seconds
 DEFAULT_THRESHOLD = -35 #dBFS

@@ -7,19 +7,6 @@ import shutil
 import sys
 from pydub import AudioSegment
 
-# def denoise(source_path:str, dest_path:str):
-#   fnames: List[str] = os.listdir(source_path)
-#   if not os.path.exists(dest_path):
-#     os.mkdir(dest_path)
-#   for fname in fnames:
-#     if not fname.lower().endswith(('.wav', '.m4a', '.mp3', 'mp4')):
-#       continue
-#     path_to_file = os.path.join(source_path, fname)
-#     args: List[str] = ['ffmpeg', '-i', path_to_file, '-af',
-#                        'lowpass=3000,highpass=200', dest_path + '/' + fname]
-#     p = subprocess.Popen(args)
-#     p.wait()
-#
 # apply the filter on all files in the current directory
 def filter(source_path: str, dest_path: str):
   fnames: List[str] = os.listdir(source_path)
